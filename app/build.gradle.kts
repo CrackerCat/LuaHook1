@@ -7,11 +7,11 @@ plugins {
 
 android {
 
-    namespace = "com.kulipai.luahook"
+    namespace = "com.kulipai.luahook1"
     compileSdk = 35
 
     defaultConfig {
-        applicationId = "com.kulipai.luahook"
+        applicationId = "com.kulipai.luahook1"
         minSdk = 28
         targetSdk = 35
         versionCode = 13
