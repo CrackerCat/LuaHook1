@@ -8,7 +8,6 @@
         tools:ignore="QueryAllPackagesPermission" />
 
     <application
-        android:name=".MyApplication"
         android:allowBackup="true"
         android:dataExtractionRules="@xml/data_extraction_rules"
         android:fullBackupContent="@xml/backup_rules"
@@ -17,27 +16,7 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.LuaHook"
         tools:targetApi="33">
-        <activity
-            android:name=".AboutActivity"
-            android:exported="false" />
-        <activity
-            android:name=".SettingsActivity"
-            android:exported="false" />
-        <activity
-            android:name=".SelectApps"
-            android:exported="false" />
-        <activity
-            android:name=".AppsEdit"
-            android:exported="false" />
-        <activity
-            android:name=".Manual"
-            android:exported="false" />
-        <activity
-            android:name=".LogCatActivity"
-            android:exported="false" />
-        <activity
-            android:name=".EditActivity"
-            android:exported="false" />
+
         <activity
             android:name=".MainActivity"
             android:windowSoftInputMode="adjustNothing"
