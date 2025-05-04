@@ -5,21 +5,22 @@ import de.robv.android.xposed.XC_MethodHook
 import de.robv.android.xposed.XposedBridge
 import de.robv.android.xposed.XposedHelpers
 import de.robv.android.xposed.callbacks.XC_LoadPackage.LoadPackageParam
-import org.luaj.vm2.LuaError
-import org.luaj.vm2.LuaTable
-import org.luaj.vm2.LuaValue
-import org.luaj.vm2.Varargs
-import org.luaj.vm2.lib.OneArgFunction
-import org.luaj.vm2.lib.TwoArgFunction
-import org.luaj.vm2.lib.VarArgFunction
-import org.luaj.vm2.lib.jse.CoerceJavaToLua
-import org.luaj.vm2.lib.jse.CoerceLuaToJava
+import org.luaj.LuaError
+import org.luaj.LuaTable
+import org.luaj.LuaValue
+import org.luaj.Varargs
+import org.luaj.lib.OneArgFunction
+import org.luaj.lib.TwoArgFunction
+import org.luaj.lib.VarArgFunction
+import org.luaj.lib.jse.CoerceJavaToLua
+import org.luaj.lib.jse.CoerceLuaToJava
 import java.lang.reflect.Constructor
 import java.lang.reflect.InvocationHandler
 import java.lang.reflect.InvocationTargetException
 import java.lang.reflect.Method
 import java.lang.reflect.Modifier
 import java.lang.reflect.Proxy
+
 
 class HookLib(private val lpparam: LoadPackageParam) : OneArgFunction() {
 
@@ -51,18 +52,6 @@ class HookLib(private val lpparam: LoadPackageParam) : OneArgFunction() {
                     // Return false followed by the error message
                     return varargsOf(FALSE, valueOf(errorMessage))
                 }
-            }
-        }
-
-
-        globals["float"] = object : OneArgFunction() {
-            override fun call(p0: LuaValue): LuaValue? {
-                return CoerceJavaToLua.coerce(p0.tofloat())
-            }
-        }
-        globals["double"] = object : OneArgFunction() {
-            override fun call(p0: LuaValue): LuaValue? {
-                return CoerceJavaToLua.coerce(p0.todouble())
             }
         }
 
@@ -112,46 +101,6 @@ class HookLib(private val lpparam: LoadPackageParam) : OneArgFunction() {
                 }
             }
         }
-
-//        globals["arrayOfType"] = object : TwoArgFunction() {
-//            override fun call(listArg: LuaValue, typeArg: LuaValue): LuaValue {
-//                return try {
-//                    // 获取传入的 ArrayList（通过 luajava 传入）
-//                    val list = listArg.touserdata(ArrayList::class.java) as? ArrayList<*> ?: return NIL
-//
-//                    // 获取目标类型（通过 Class 或字符串表示）
-//                    val componentType: Class<*>? = when {
-//                        typeArg.isuserdata(Class::class.java) -> typeArg.touserdata(Class::class.java) as Class<*>
-//                        typeArg.isstring() -> when (val name = typeArg.tojstring()) {
-//                            "String" -> String::class.java
-//                            "Class" -> Class::class.java
-//                            "Integer" -> Int::class.javaObjectType
-//                            "Long" -> Long::class.javaObjectType
-//                            "Double" -> Double::class.javaObjectType
-//                            "Boolean" -> Boolean::class.javaObjectType
-//                            "Any" -> Any::class.java
-//                            else -> throw IllegalArgumentException("Unknown type: $name")
-//                        }
-//                        else -> throw IllegalArgumentException("Invalid type argument: $typeArg")
-//                    }
-//
-//                    // 创建数组
-//                    val javaArray = java.lang.reflect.Array.newInstance(componentType, list.size) as Array<Any?>
-//
-//                    for (i in list.indices) {
-//                        javaArray[i] = list[i]
-//                    }
-//
-//                    // 返回数组包装为 LuaValue
-//                    CoerceJavaToLua.coerce(javaArray)
-//
-//                } catch (e: Exception) {
-//                    println("arrayOfType error: ${e.message}")
-//                    e.printStackTrace()
-//                    NIL
-//                }
-//            }
-//        }
 
 
         globals["lpparam"] = CoerceJavaToLua.coerce(lpparam)
@@ -293,46 +242,73 @@ class HookLib(private val lpparam: LoadPackageParam) : OneArgFunction() {
         }
 
 
-//        globals["new"] = object : VarArgFunction() {
-//            override fun invoke(args: Varargs): LuaValue {
-//                try {
-//                    val classNameOrClass = args.arg(1)
-//                    val clazz: Class<*> = when {
-//                        //字符串
-//                        classNameOrClass.isstring() -> {
-//                            val className = args.checkjstring(1)
-//                            Class.forName(className)
-//                        }
-//                        //类
-//                        classNameOrClass.isuserdata(Any::class.java) -> classNameOrClass.touserdata(Any::class.java)
-//                        else -> {
-//                            throw IllegalArgumentException("First argument must be class name (String) or Class object")
-//                        }
-//                    } as Class<*>
-//
-//                    val params = mutableListOf<Any?>()
-//                    val paramTypes = mutableListOf<Class<*>>()
-//                    for (i in 2..args.narg()) {
-//                        val value = fromLuaValue(args.arg(i))
-//                        params.add(value)
-//                        paramTypes.add(value?.javaClass ?: Any::class.java)
-//                    }
-//
-//                    "111:${clazz}".d()
-//                    val constructor = clazz.getConstructor(*paramTypes.toTypedArray())
-//                    constructor.isAccessible = true // 允许访问非公共构造函数
-//                    "222:$constructor".d()
-//                    val instance = constructor.newInstance(*params.toTypedArray())
-//                    "333:$instance".d()
-//                    return CoerceJavaToLua.coerce(instance)
-//
-//                } catch (e: Exception) {
-//                    println("newInstance error: ${e.message}")
-//                    e.toString().d()
-//                }
-//                return NIL
-//            }
-//        }
+
+        /**
+         * 安全地将 LuaValue 转换为 Java Class 对象
+         * 处理普通 Class 和 JavaClass（接口或类）的情况
+         */
+        fun safeToJavaClass(luaValue: LuaValue): Class<*>? {
+            if (!luaValue.isuserdata()) return null
+
+            val userData = luaValue.touserdata()
+
+            // 直接是 Class 类型的情况
+            if (userData is Class<*>) {
+                return userData
+            }
+
+            // JavaClass 或其他包装类型的情况
+            return try {
+                // 尝试获取内部字段
+                val possibleFields = listOf("clazz", "class", "jclass", "classObject")
+                for (fieldName in possibleFields) {
+                    try {
+                        val field = userData.javaClass.getDeclaredField(fieldName)
+                        field.isAccessible = true
+                        val fieldValue = field.get(userData)
+                        if (fieldValue is Class<*>) {
+                            return fieldValue
+                        }
+                    } catch (e: NoSuchFieldException) {
+                        // 继续尝试下一个字段
+                    }
+                }
+
+                // 尝试调用可能的方法
+                val possibleMethods = listOf("getClassObject", "toClass", "asClass", "getJavaClass")
+                for (methodName in possibleMethods) {
+                    try {
+                        val method = userData.javaClass.getMethod(methodName)
+                        val result = method.invoke(userData)
+                        if (result is Class<*>) {
+                            return result
+                        }
+                    } catch (e: NoSuchMethodException) {
+                        // 继续尝试下一个方法
+                    }
+                }
+
+                // 记录反射信息以便调试
+                "无法转换 ${userData.javaClass.name} 为 Class 对象".d()
+
+                // 最后尝试通过名称获取
+                try {
+                    // 尝试获取类名
+                    val nameMethod = userData.javaClass.getMethod("getName")
+                    val className = nameMethod.invoke(userData) as? String
+                    if (className != null) {
+                        return Class.forName(className)
+                    }
+                } catch (e: Exception) {
+                    // 忽略并返回 null
+                }
+
+                null
+            } catch (t: Throwable) {
+                t.toString().e()
+                null
+            }
+        }
 
 
         // 封装获取构造函数的 Lua 函数
@@ -348,41 +324,43 @@ class HookLib(private val lpparam: LoadPackageParam) : OneArgFunction() {
                 for (i in 2..args.narg()) {
                     try {
                         if (args.arg(i).isstring()) {
-
-
                             val typeName = args.checkjstring(i)
                             val type = parseType(typeName, lpparam.classLoader)
-//                        val type = when (typeName) {
-//                            "int" -> Int::class.javaPrimitiveType
-//                            "boolean" -> Boolean::class.javaPrimitiveType
-//                            "float" -> Float::class.javaPrimitiveType
-//                            "double" -> Double::class.javaPrimitiveType
-//                            "long" -> Long::class.javaPrimitiveType
-//                            "char" -> Char::class.javaPrimitiveType
-//                            "byte" -> Byte::class.javaPrimitiveType
-//                            "short" -> Short::class.javaPrimitiveType
-//                            else -> Class.forName(typeName)
-//                        }
-
                             paramTypes.add(type as Class<*>)
-
-                        } else if (args.arg(i).isuserdata(Class::class.java)) {
-                            paramTypes.add(args.arg(i) as Class<*>)
+                        } else if (args.arg(i).isuserdata()) {
+                            // 使用安全的转换方法替代直接 as 转换
+                            val classObj = safeToJavaClass(args.arg(i))
+                            if (classObj != null) {
+                                paramTypes.add(classObj)
+                            } else {
+                                "getConstructor: 无法将参数 $i 转换为 Class".e()
+                                return error("getConstructor: 无法将参数 $i 转换为 Class")
+                            }
+                        } else {
+                            "getConstructor: 参数 $i 类型不支持".e()
+                            return error("getConstructor: 参数类型不支持")
                         }
-                    } catch (_: ClassNotFoundException) {
-                        "getConstructor:参数错误".e()
-                        return error("getConstructor:参数错误")
+                    } catch (e: ClassNotFoundException) {
+                        "getConstructor: 参数错误".e()
+                        return error("getConstructor: 参数错误")
+                    } catch (e: Exception) {
+                        e.toString().e()
+                        return error("getConstructor: ${e.message}")
                     }
                 }
 
                 return try {
                     val constructor = clazz.getConstructor(*paramTypes.toTypedArray())
                     CoerceJavaToLua.coerce(constructor)
-                } catch (_: NoSuchMethodException) {
+                } catch (e: NoSuchMethodException) {
                     NIL
+                } catch (e: Exception) {
+                    e.toString().e()
+                    error("getConstructor: ${e.message}")
                 }
             }
         }
+
 
         // 封装创建新实例的 Lua 函数
         globals["newInstance"] = object : VarArgFunction() {
@@ -525,7 +503,6 @@ class HookLib(private val lpparam: LoadPackageParam) : OneArgFunction() {
                 }
             }
         }
-
 
 
 //        globals["callMethod"] = object : VarArgFunction() {
@@ -678,13 +655,17 @@ class HookLib(private val lpparam: LoadPackageParam) : OneArgFunction() {
 
                         // 动态处理参数类型
                         val paramTypes = mutableListOf<Class<*>>()
-                        val luaParams = mutableListOf<LuaValue>()
-
 
                         // 收集参数类型
                         for (i in 4 until args.narg() - 1) {
                             val param = args.arg(i)
                             when {
+
+//                                else if (args.arg(i).isuserdata()) {
+//                                    // 使用安全的转换方法替代直接 as 转换
+//                                    val classObj = safeToJavaClass(args.arg(i))
+//                                    if (classObj != null) {
+//                                        paramTypes.add(classObj)
                                 param.isstring() -> {
                                     // 支持更多类型转换
                                     val typeStr = param.tojstring()
@@ -702,11 +683,14 @@ class HookLib(private val lpparam: LoadPackageParam) : OneArgFunction() {
 //                                        else -> Class.forName(typeStr, true, classLoader)
 //                                    }
                                     paramTypes.add(type!!)
-                                    luaParams.add(param)
+
                                 }
                                 // 可以扩展更多类型的处理
                                 else -> {
-                                    throw IllegalArgumentException("Unsupported parameter type: ${param.type()}")
+                                    val classObj = safeToJavaClass(param)
+                                    if (classObj != null) {
+                                        paramTypes.add(classObj)
+                                    }
                                 }
                             }
                         }
@@ -1116,7 +1100,10 @@ class HookLib(private val lpparam: LoadPackageParam) : OneArgFunction() {
                                 }
                                 // Can expand more type handling here
                                 else -> {
-                                    throw IllegalArgumentException("Unsupported parameter type: ${param.type()}")
+                                    val classObj = safeToJavaClass(param)
+                                    if (classObj != null) {
+                                        paramTypes.add(classObj)
+                                    }
                                 }
                             }
                         }
