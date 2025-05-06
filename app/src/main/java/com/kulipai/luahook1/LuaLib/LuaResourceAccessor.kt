@@ -6,7 +6,7 @@ import org.luaj.LuaValue
 import org.luaj.Varargs
 import org.luaj.lib.VarArgFunction
 import org.luaj.lib.jse.CoerceJavaToLua
-import com.kulipai.luahook.util.d // 假设这是你的日志工具
+import com.kulipai.luahook1.util.d // 假设这是你的日志工具
 import org.luaj.Globals
 import java.lang.reflect.Modifier
 

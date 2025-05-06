@@ -4,15 +4,15 @@
     "type": "APK",
     "kind": "Directory"
   },
-  "applicationId": "com.kulipai.luahook",
+  "applicationId": "com.kulipai.luahook1",
   "variantName": "release",
   "elements": [
     {
       "type": "SINGLE",
       "filters": [],
       "attributes": [],
-      "versionCode": 16,
-      "versionName": "3.4444444444444-luaj++",
+      "versionCode": 17,
+      "versionName": "3.5",
       "outputFile": "app-release.apk"
     }
   ],

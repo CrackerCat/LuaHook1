@@ -9,7 +9,6 @@
 
     <application
         android:enableOnBackInvokedCallback="true"
-        android:name=".MyApplication"
         android:allowBackup="true"
         android:dataExtractionRules="@xml/data_extraction_rules"
         android:fullBackupContent="@xml/backup_rules"
@@ -19,16 +18,16 @@
         android:theme="@style/Theme.LuaHook"
         tools:targetApi="33">
 
-        <activity
-            android:name=".MainActivity"
-            android:windowSoftInputMode="adjustNothing"
-            android:exported="true">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
+<!--        <activity-->
+<!--            android:name=".MainActivity"-->
+<!--            android:windowSoftInputMode="adjustNothing"-->
+<!--            android:exported="true">-->
+<!--            <intent-filter>-->
+<!--                <action android:name="android.intent.action.MAIN" />-->
 
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
-        </activity>
+<!--                <category android:name="android.intent.category.LAUNCHER" />-->
+<!--            </intent-filter>-->
+<!--        </activity>-->
 
         <meta-data
             android:name="xposedmodule"
